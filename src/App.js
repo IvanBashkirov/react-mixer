@@ -14,7 +14,7 @@ class Mixer extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      play: true,
+      play: false,
       soloedChannels: 0
     }
     this.toggleSoloMode = this.toggleSoloMode.bind(this);
@@ -28,37 +28,24 @@ class Mixer extends Component {
     });
   }
 
-  playMusic(p) {
-    this.setState({
-      play: p
-    })
+  playMusic() {
+    this.setState((prevState) => ({play: !prevState.play}));
   }
 
   render() {
     return (
       <div>
-        <div>
-          <Channel soundSource="voice.mp3" soloMode={this.state.soloedChannels} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
-          <Channel soundSource="bass.mp3" soloMode={this.state.soloedChannels} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
-          <Channel soundSource="drums.mp3" soloMode={this.state.soloedChannels} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
-          <Channel soundSource="choir.mp3" soloMode={this.state.soloedChannels} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
+        <div className="mixer">
+          <Channel soundSource="voice.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
+          <Channel  soundSource="bass.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
+          <Channel  soundSource="drums.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
+          <Channel soundSource="choir.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
         </div>
-        <div>
-
-        </div>
+        <MixerToggleButton color="yellow" on={this.state.play} onButtonPress={this.playMusic} />
       </div>
     );
   }
 }
-
-// class MixerControls extends Component {
-//   constructor(props) {
-//     super(props);
-//     this.state = {
-//         play
-//     }
-//   }
-// }
 
 class Channel extends Component {
   constructor(props) {
@@ -66,6 +53,8 @@ class Channel extends Component {
     this.volumeChange = this.volumeChange.bind(this);
     this.soloChannelToggle = this.soloChannelToggle.bind(this);
     this.muteChannelToggle= this.muteChannelToggle.bind(this);
+    this.toggleMuteIfNeeded = this.toggleMuteIfNeeded.bind(this);
+    this.togglePlayIfNeeded = this.togglePlayIfNeeded.bind(this);
     this.state = {
       isChannelMuted: false,
       isChannelSoloed: false,
@@ -76,26 +65,34 @@ class Channel extends Component {
   componentWillMount() {
     this.sound = new buzz.sound(this.props.soundSource).loop();
     this.sound.setVolume(this.state.volume);
+    this.toggleMuteIfNeeded();
+    this.togglePlayIfNeeded();
+  }
+
+  toggleMuteIfNeeded() {
     (this.props.soloMode || this.state.isChannelMuted) && !this.state.isChannelSoloed ? this.sound.mute() : this.sound.unmute();
+  }
+
+  togglePlayIfNeeded() {
     (this.props.play) ? this.sound.play() : this.sound.stop();
   }
 
-  componentWillUnmount() {
-    this.sound = null;
-  }
-
   muteChannelToggle() {
-    this.setState((prevState) => ({
-      isChannelMuted: !prevState.isChannelMuted
-    }))
+    this.setState(
+      (prevState) => ({isChannelMuted: !prevState.isChannelMuted}),
+      this.toggleMuteIfNeeded
+    )
   }
 
   soloChannelToggle() {
     const soloed = !this.state.isChannelSoloed
     this.setState(
       {isChannelSoloed: soloed},
-      () => this.props.toggleSoloMode(soloed)
-    )
+      () => {
+        this.props.toggleSoloMode(soloed);
+        this.toggleMuteIfNeeded();
+      }
+    );
   }
 
   volumeChange(v) {
@@ -105,29 +102,22 @@ class Channel extends Component {
     )
   }
 
-  componentDidUpdate(prevState, prevProps) {
-
-    if (prevState.isChannelMuted !== this.state.isChannelMuted ||
-        prevState.isChannelSoloed !== this.state.isChannelSoloed ||
-        prevProps.soloMode !== this.props.soloMode) {
-      (this.props.soloMode || this.state.isChannelMuted) && !this.state.isChannelSoloed ? this.sound.mute() : this.sound.unmute();
-    }
-
-    if (prevProps.play !== this.props.play) {
-      (this.props.play) ? this.sound.play() : this.sound.stop();
-    }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.soloMode !== this.props.soloMode) this.toggleMuteIfNeeded();
+    if (prevProps.play !== this.props.play) this.togglePlayIfNeeded();
   }
 
   render() {
     return (
-      <div>
-        <MixerToggleButton color='red' on={this.state.isChannelMuted} onButtonPress={this.muteChannelToggle}/>
-        <MixerToggleButton color='green' on={this.state.isChannelSoloed} onButtonPress={this.soloChannelToggle}/>
+      <div className="channel" >
         <MixerSlider sliderValue={this.state.volume} onSliderMove={this.volumeChange}/>
+        <MixerToggleButton color='red' on={this.state.isChannelMuted} onButtonPress={this.muteChannelToggle}/>
+        <MixerToggleButton color='springgreen' on={this.state.isChannelSoloed} onButtonPress={this.soloChannelToggle}/>
       </div>
     );
   }
 }
+
 
 class MixerToggleButton extends Component {
   constructor(props) {
@@ -148,6 +138,7 @@ class MixerToggleButton extends Component {
   }
 }
 
+
 class MixerSlider extends Component {
   constructor(props) {
     super(props);
@@ -160,14 +151,13 @@ class MixerSlider extends Component {
 
   render() {
     return (
-      <div>
-      <input type="range" value={this.props.sliderValue} onChange={this.handleChange}/>{this.props.sliderValue}
+      <div className="volume-fader" >
+      <input type="range" value={this.props.sliderValue} onChange={this.handleChange}/>
+      <label>{this.props.sliderValue}</label>
       </div>
     );
   }
 }
-
-
 
 
 export default App;
