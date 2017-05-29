@@ -10,6 +10,7 @@ class App extends Component {
   }
 }
 
+
 class Mixer extends Component {
   constructor(props) {
     super(props);
@@ -19,6 +20,7 @@ class Mixer extends Component {
     }
     this.toggleSoloMode = this.toggleSoloMode.bind(this);
     this.playMusic = this.playMusic.bind(this);
+    this.soundSources = ["voice.mp3", "bass.mp3", "drums.mp3", "choir.mp3"];
   }
 
   toggleSoloMode(s) {
@@ -33,19 +35,25 @@ class Mixer extends Component {
   }
 
   render() {
+    const channels = this.soundSources.map((src, indx) =>
+      <Channel key={indx}
+               soundSource={src}
+               soloMode={Boolean(this.state.soloedChannels)}
+               toggleSoloMode={this.toggleSoloMode}
+               play={this.state.play}
+      />
+    );
     return (
       <div>
         <div className="mixer">
-          <Channel soundSource="voice.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
-          <Channel  soundSource="bass.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
-          <Channel  soundSource="drums.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
-          <Channel soundSource="choir.mp3" soloMode={Boolean(this.state.soloedChannels)} toggleSoloMode={this.toggleSoloMode} play={this.state.play}/>
+          {channels}
         </div>
         <MixerToggleButton color="yellow" on={this.state.play} onButtonPress={this.playMusic} />
       </div>
     );
   }
 }
+
 
 class Channel extends Component {
   constructor(props) {
