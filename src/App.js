@@ -16,17 +16,18 @@ class Mixer extends Component {
     super(props);
     this.state = {
       play: false,
-      soloedChannels: 0
+      soloMode: false
     }
+    this.soloedChannels = 0;
     this.toggleSoloMode = this.toggleSoloMode.bind(this);
     this.playMusic = this.playMusic.bind(this);
     this.soundSources = ["voice.mp3", "bass.mp3", "drums.mp3", "choir.mp3"];
   }
 
   toggleSoloMode(s) {
-    const ch = this.state.soloedChannels + ((s) ? 1 : -1)
+    this.soloedChannels += ((s) ? 1 : -1)
     this.setState({
-      soloedChannels: ch
+      soloMode: Boolean(this.soloedChannels)
     });
   }
 
@@ -38,7 +39,7 @@ class Mixer extends Component {
     const channels = this.soundSources.map((src, indx) =>
       <Channel key={indx}
                soundSource={src}
-               soloMode={Boolean(this.state.soloedChannels)}
+               soloMode={this.state.soloMode}
                toggleSoloMode={this.toggleSoloMode}
                play={this.state.play}
       />
